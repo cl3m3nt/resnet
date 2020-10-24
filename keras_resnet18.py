@@ -76,11 +76,13 @@ def conv_block(input_tensor,kernel_size,filters,stage,block,strides=(2,2)):
     x = Activation('relu')(x)
     return x
 
+# Those are mandatory for ResNet function to work   
 backend = tf.compat.v1.keras.backend
 layers = tf.keras.layers
 models = tf.keras.models
 utils = tf.keras.utils
 
+# ResnNet18
 def ResNet18(include_top=True,
              weights='imagenet',
              input_tensor=None,
@@ -195,9 +197,6 @@ WEIGHTS_PATH = ('https://github.com/qubvel/classification_models/releases/downlo
 WEIGHTS_PATH_NO_TOP = ('https://github.com/qubvel/classification_models/releases/download/0.0.1/resnet18_imagenet_1000_no_top.h5')
 
 
-
-
-
 def sample_batch():
     img_path = '/Users/clement/mycar4/data/images'
     img_list = os.listdir(img_path)
@@ -260,14 +259,29 @@ my_resnet18 = compile(my_resnet18)
 my_resnet18 = resnet18_10(input_shape=(32,32,3))
 my_resnet18 = compile(my_resnet18)
 
-# CIFAR10
+
+# CIFAR10 from tf.keras.datasets
 cifar10 = datasets.cifar10
 (x_train,y_train),(x_test,y_test) = cifar10.load_data()
 x_train = x_train/255.0
 x_test = x_test/255.0
 
-# Training Local Resnet with CIFAR10
+# CIFAR10 from tfds
+cifar10_tfds = tfds.load('cifar10',as_supervised=True)
+data_train = cifar10_tfds['train']
+data_validation = cifar10_tfds['test']
+data_train_ds = data_train.batch(32)
+data_validation_ds = data_validation.batch(32)
+
+
+# Training Local Resnet with CIFAR10 from tf.keras.datasets
 history = my_resnet18.fit(x_train,y_train,
                           validation_data = (x_test,y_test),
+                          epochs=1
+                        )
+
+# Training Local Resnet with CIFAR10 from tfds
+history = my_resnet18.fit(data_train_ds,
+                          validation_data = data_validation_ds,
                           epochs=1
                         )
