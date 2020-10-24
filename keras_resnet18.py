@@ -7,6 +7,8 @@ from keras_applications.imagenet_utils import _obtain_input_shape, get_submodule
 import cv2
 import numpy as np
 import os
+import tensorflow.keras.datasets as datasets
+import tensorflow_datasets as tfds
 
 
 
@@ -193,9 +195,79 @@ WEIGHTS_PATH = ('https://github.com/qubvel/classification_models/releases/downlo
 WEIGHTS_PATH_NO_TOP = ('https://github.com/qubvel/classification_models/releases/download/0.0.1/resnet18_imagenet_1000_no_top.h5')
 
 
-clr_resnet18 = ResNet18(include_top=False,input_shape=(160,120,3),backend=backend,layers=layers,models=models,utils=utils)
 
+
+
+def sample_batch():
+    img_path = '/Users/clement/mycar4/data/images'
+    img_list = os.listdir(img_path)
+    img_batch = []
+
+    for i in range(0,32):
+        img = cv2.imread(os.path.join(img_path,img_list[i]))
+        img = img/255.0
+        img_batch.append(img)
+
+    batch = np.array(img_batch)
+    return batch 
+
+
+def transfer_resnet18(input_shape):
+    resnet18 = ResNet18(include_top=False,input_shape=input_shape,backend=backend,layers=layers,models=models,utils=utils)
+    resnet18_preprocess = tf.keras.applications.resnet.preprocess_input
+
+    inputs = tf.keras.Input(shape=input_shape)
+    x = resnet18_preprocess(inputs)
+    x = resnet18(inputs,training=False)
+    x = tf.keras.layers.GlobalAveragePooling2D()(x)
+    outputs = tf.keras.layers.Dense(10,activation='softmax')(x)
+    transfered_model = tf.keras.Model(inputs,outputs)
+    transfered_model.summary()
+    return transfered_model
+
+
+def resnet18_10(input_shape):
+    resnet18 = ResNet18(include_top=False,input_shape=input_shape,backend=backend,layers=layers,models=models,utils=utils)
+    resnet18_preprocess = tf.keras.applications.resnet.preprocess_input
+
+    inputs = tf.keras.Input(shape=input_shape)
+    x = resnet18_preprocess(inputs)
+    x = resnet18(inputs,training=True)
+    x = tf.keras.layers.GlobalAveragePooling2D()(x)
+    outputs = tf.keras.layers.Dense(10,activation='softmax')(x)
+    transfered_model = tf.keras.Model(inputs,outputs)
+    transfered_model.summary()
+    return transfered_model
+
+def compile(model):
+    model.compile(
+    optimizer='adam',
+    loss='sparse_categorical_crossentropy',
+    metrics=['accuracy']
+    )
+    return model
+
+# Resnet18 from Pytorch applications
 import torchvision.models as tvmodels
 resnet18tv = tvmodels.resnet18()
 resnet18tv
 
+# Resnet18 from keras local implementation
+my_resnet18 = ResNet18(include_top=False,input_shape=(32,32,3),backend=backend,layers=layers,models=models,utils=utils)
+my_resnet18 = compile(my_resnet18)
+
+# Resnet18_10 from transfer resnet18_10
+my_resnet18 = resnet18_10(input_shape=(32,32,3))
+my_resnet18 = compile(my_resnet18)
+
+# CIFAR10
+cifar10 = datasets.cifar10
+(x_train,y_train),(x_test,y_test) = cifar10.load_data()
+x_train = x_train/255.0
+x_test = x_test/255.0
+
+# Training Local Resnet with CIFAR10
+history = my_resnet18.fit(x_train,y_train,
+                          validation_data = (x_test,y_test),
+                          epochs=1
+                        )
