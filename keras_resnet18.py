@@ -273,6 +273,19 @@ data_validation = cifar10_tfds['test']
 data_train_ds = data_train.batch(32)
 data_validation_ds = data_validation.batch(32)
 
+# CIFAR100 from tf.keras.datasets
+cifar100 = datasets.cifar100
+(x_train_100,y_train_100),(x_test_100,y_test_100) = cifar100.load_data()
+x_train_100 = x_train/255.0
+x_test_100 = x_test/255.0
+
+# CIFAR100 from tfds
+cifar100_tfds = tfds.load('cifar100',as_supervised=True)
+data_train_100 = cifar100_tfds['train']
+data_validation_100 = cifar100_tfds['test']
+data_train_ds_100 = data_train.batch(32)
+data_validation_ds_100 = data_validation.batch(32)
+
 
 # Training Local Resnet with CIFAR10 from tf.keras.datasets
 history = my_resnet18.fit(x_train,y_train,
@@ -283,5 +296,17 @@ history = my_resnet18.fit(x_train,y_train,
 # Training Local Resnet with CIFAR10 from tfds
 history = my_resnet18.fit(data_train_ds,
                           validation_data = data_validation_ds,
+                          epochs=1
+                        )
+
+# Training Local Resnet with CIFAR100 from tf.keras.datasets
+history = my_resnet18.fit(x_train_100,y_train_100,
+                          validation_data = (x_test_100,y_test_100),
+                          epochs=1
+                        )
+
+# Training Local Resnet with CIFAR10 from tfds
+history = my_resnet18.fit(data_train_ds_100,
+                          validation_data = data_validation_ds_100,
                           epochs=1
                         )
