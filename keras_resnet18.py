@@ -225,7 +225,7 @@ def transfer_resnet18(input_shape):
     return transfered_model
 
 
-def resnet18_10(input_shape):
+def resnet18_n_class(input_shape,n_class):
     resnet18 = ResNet18(include_top=False,input_shape=input_shape,backend=backend,layers=layers,models=models,utils=utils)
     resnet18_preprocess = tf.keras.applications.resnet.preprocess_input
 
@@ -233,7 +233,7 @@ def resnet18_10(input_shape):
     x = resnet18_preprocess(inputs)
     x = resnet18(inputs,training=True)
     x = tf.keras.layers.GlobalAveragePooling2D()(x)
-    outputs = tf.keras.layers.Dense(10,activation='softmax')(x)
+    outputs = tf.keras.layers.Dense(n_class,activation='softmax')(x)
     transfered_model = tf.keras.Model(inputs,outputs)
     transfered_model.summary()
     return transfered_model
@@ -255,9 +255,13 @@ resnet18tv
 my_resnet18 = ResNet18(include_top=False,input_shape=(32,32,3),backend=backend,layers=layers,models=models,utils=utils)
 my_resnet18 = compile(my_resnet18)
 
-# Resnet18_10 from transfer resnet18_10
-my_resnet18 = resnet18_10(input_shape=(32,32,3))
-my_resnet18 = compile(my_resnet18)
+# Resnet18_10 from transfer resnet18_n_class
+my_resnet18_10 = resnet18_n_class((32,32,3),10)
+my_resnet18_10 = compile(my_resnet18_10)
+
+# Resnet18_100 from transfer resnet18_n_class
+my_resnet18_100 = resnet18_n_class((32,32,3),100)
+my_resnet18_100 = compile(my_resnet18_100)
 
 
 # CIFAR10 from tf.keras.datasets
@@ -276,37 +280,37 @@ data_validation_ds = data_validation.batch(32)
 # CIFAR100 from tf.keras.datasets
 cifar100 = datasets.cifar100
 (x_train_100,y_train_100),(x_test_100,y_test_100) = cifar100.load_data()
-x_train_100 = x_train/255.0
-x_test_100 = x_test/255.0
+x_train_100 = x_train_100/255.0
+x_test_100 = x_test_100/255.0
 
 # CIFAR100 from tfds
 cifar100_tfds = tfds.load('cifar100',as_supervised=True)
 data_train_100 = cifar100_tfds['train']
 data_validation_100 = cifar100_tfds['test']
-data_train_ds_100 = data_train.batch(32)
-data_validation_ds_100 = data_validation.batch(32)
+data_train_ds_100 = data_train_100.batch(32)
+data_validation_ds_100 = data_validation._100batch(32)
 
 
 # Training Local Resnet with CIFAR10 from tf.keras.datasets
-history = my_resnet18.fit(x_train,y_train,
+history = my_resnet18_10.fit(x_train,y_train,
                           validation_data = (x_test,y_test),
                           epochs=1
                         )
 
 # Training Local Resnet with CIFAR10 from tfds
-history = my_resnet18.fit(data_train_ds,
+history = my_resnet18_10.fit(data_train_ds,
                           validation_data = data_validation_ds,
                           epochs=1
                         )
 
 # Training Local Resnet with CIFAR100 from tf.keras.datasets
-history = my_resnet18.fit(x_train_100,y_train_100,
+history = my_resnet18_100.fit(x_train_100,y_train_100,
                           validation_data = (x_test_100,y_test_100),
-                          epochs=1
+                          epochs=2
                         )
 
-# Training Local Resnet with CIFAR10 from tfds
-history = my_resnet18.fit(data_train_ds_100,
+# Training Local Resnet with CIFAR100 from tfds
+history = my_resnet18_100.fit(data_train_ds_100,
                           validation_data = data_validation_ds_100,
-                          epochs=1
+                          epochs=2
                         )
