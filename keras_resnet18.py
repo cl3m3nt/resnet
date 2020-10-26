@@ -263,6 +263,10 @@ my_resnet18_10 = compile(my_resnet18_10)
 my_resnet18_100 = resnet18_n_class((32,32,3),100)
 my_resnet18_100 = compile(my_resnet18_100)
 
+# Resnet18_100 from transfer resnet18_n_class
+my_resnet18_100_coarse = resnet18_n_class((32,32,3),20)
+my_resnet18_100_coarse = compile(my_resnet18_100_coarse)
+
 
 # CIFAR10 from tf.keras.datasets
 cifar10 = datasets.cifar10
@@ -282,6 +286,13 @@ cifar100 = datasets.cifar100
 (x_train_100,y_train_100),(x_test_100,y_test_100) = cifar100.load_data()
 x_train_100 = x_train_100/255.0
 x_test_100 = x_test_100/255.0
+
+# CIFAR100 coarse from tf.keras.datasets 
+cifar100_coarse = datasets.cifar100
+(x_train_100_coarse,y_train_100_coarse),(x_test_100_coarse,y_test_100_coarse) = cifar100.load_data(label_mode="coarse")
+x_train_100_coarse = x_train_100_coarse/255.0
+x_test_100_coarse = x_test_100_coarse/255.0
+
 
 # CIFAR100 from tfds
 cifar100_tfds = tfds.load('cifar100',as_supervised=True)
@@ -306,6 +317,12 @@ history = my_resnet18_10.fit(data_train_ds,
 # Training Local Resnet with CIFAR100 from tf.keras.datasets
 history = my_resnet18_100.fit(x_train_100,y_train_100,
                           validation_data = (x_test_100,y_test_100),
+                          epochs=2
+                        )
+
+# Training Local Resnet with CIFAR100 from tf.keras.datasets
+history = my_resnet18_100_coarse.fit(x_train_100_coarse,y_train_100_coarse,
+                          validation_data = (x_test_100_coarse,y_test_100_coarse),
                           epochs=2
                         )
 
