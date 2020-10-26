@@ -233,6 +233,10 @@ def resnet18_n_class(input_shape,n_class):
     x = resnet18_preprocess(inputs)
     x = resnet18(inputs,training=True)
     x = tf.keras.layers.GlobalAveragePooling2D()(x)
+    # Extra classification layer with 128 Neurons
+    x = tf.keras.layers.Dense(128,activation='relu')(x)
+    # Adding Dropout to avoid from overfitting
+    x = tf.keras.layers.Dropout(0.2)(x)
     outputs = tf.keras.layers.Dense(n_class,activation='softmax')(x)
     transfered_model = tf.keras.Model(inputs,outputs)
     transfered_model.summary()
