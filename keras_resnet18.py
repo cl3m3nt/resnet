@@ -84,26 +84,26 @@ utils = tf.keras.utils
 
 # ResnNet18
 def ResNet18(include_top=True,
-             weights='imagenet',
+             weights='cifar100_coarse',
              input_tensor=None,
              input_shape=None,
              pooling=None,
-             classes=1000,
+             classes=20,
              **kwargs):
     global backend, layers, models, keras_utils
     backend, layers, models, keras_utils = get_submodules_from_kwargs(kwargs)
 
 
 
-    if not (weights in {'imagenet', None} or os.path.exists(weights)):
+    if not (weights in {'cifar100_coarse', None} or os.path.exists(weights)):
         raise ValueError('The `weights` argument should be either '
-                         '`None` (random initialization), `imagenet` '
-                         '(pre-training on ImageNet), '
+                         '`None` (random initialization), `cifar100_coarse` '
+                         '(pre-training on cifar100 coarse (super) classes), '
                          'or the path to the weights file to be loaded.')
 
-    if weights == 'imagenet' and include_top and classes != 1000:
-        raise ValueError('If using `weights` as `"imagenet"` with `include_top`'
-                         ' as true, `classes` should be 1000')
+    if weights == 'cifar100_coarse' and include_top and classes != 1000:
+        raise ValueError('If using `weights` as `"cifar100_coarse"` with `include_top`'
+                         ' as true, `classes` should be 20')
 
     # Determine proper input shape
     input_shape = _obtain_input_shape(input_shape,
@@ -151,7 +151,7 @@ def ResNet18(include_top=True,
 
     if include_top:
         x = layers.GlobalAveragePooling2D(name='avg_pool')(x)
-        x = layers.Dense(classes, activation='softmax', name='fc1000')(x)
+        x = layers.Dense(classes, activation='softmax', name='fc20')(x)
     else:
         if pooling == 'avg':
             x = layers.GlobalAveragePooling2D()(x)
@@ -174,22 +174,22 @@ def ResNet18(include_top=True,
     model = Model(inputs, x, name='resnet18')
 
     # Load weights.
-    '''
-    if weights == 'imagenet':
+    
+    if weights == 'cifar100_coarse':
         if include_top:
             weights_path = keras_utils.get_file(
-                'resnet18_imagenet_1000.h5',
+                'resnet18_cifar100_coarse.h5',
                 WEIGHTS_PATH,
                 cache_subdir='models',
-                md5_hash='64da73012bb70e16c901316c201d9803')
+                md5_hash='a3326853d92e0bc803f4403849040583')
         else:
             weights_path = keras_utils.get_file(
-                'resnet18_imagenet_1000_no_top.h5',
+                'resnet18_cifar100_coarse_no_top.h5',
                 WEIGHTS_PATH_NO_TOP,
                 cache_subdir='models',
-                md5_hash='318e3ac0cd98d51e917526c9f62f0b50')
+                md5_hash='a3326853d92e0bc803f4403849040583')
         model.load_weights(weights_path)
-    '''
+    
     return model
 
 
