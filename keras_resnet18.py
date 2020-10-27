@@ -293,7 +293,7 @@ x_test_100 = x_test_100/255.0
 
 # CIFAR100 coarse from tf.keras.datasets 
 cifar100_coarse = datasets.cifar100
-(x_train_100_coarse,y_train_100_coarse),(x_test_100_coarse,y_test_100_coarse) = cifar100.load_data(label_mode="coarse")
+(x_train_100_coarse,y_train_100_coarse),(x_test_100_coarse,y_test_100_coarse) = cifar100_coarse.load_data(label_mode="coarse")
 x_train_100_coarse = x_train_100_coarse/255.0
 x_test_100_coarse = x_test_100_coarse/255.0
 
