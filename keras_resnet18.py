@@ -82,6 +82,11 @@ layers = tf.keras.layers
 models = tf.keras.models
 utils = tf.keras.utils
 
+
+WEIGHTS_PATH = ('https://github.com/cl3m3nt/resnet/blob/master/resnet18_cifar100_coarse.h5')
+WEIGHTS_PATH_NO_TOP = ('https://github.com/cl3m3nt/resnet/blob/master/resnet18_cifar100_coarse_no_top.h5')
+
+
 # ResnNet18
 def ResNet18(include_top=True,
              weights='cifar100_coarse',
@@ -174,7 +179,7 @@ def ResNet18(include_top=True,
     model = Model(inputs, x, name='resnet18')
 
     # Load weights.
-    
+    '''
     if weights == 'cifar100_coarse':
         if include_top:
             weights_path = keras_utils.get_file(
@@ -189,37 +194,26 @@ def ResNet18(include_top=True,
                 cache_subdir='models',
                 md5_hash='a3326853d92e0bc803f4403849040583')
         model.load_weights(weights_path)
+    '''
+    if weights == 'cifar100_coarse':
+        if include_top:
+            weights_path = 'resnet18_cifar100_coarse.h5'
+        else:
+            weights_path = 'resnet18_cifar100_coarse_no_top.h5'
+        model.load_weights(weights_path)
     
     return model
 
 
-WEIGHTS_PATH = ('https://github.com/qubvel/classification_models/releases/download/0.0.1/resnet18_imagenet_1000.h5')
-WEIGHTS_PATH_NO_TOP = ('https://github.com/qubvel/classification_models/releases/download/0.0.1/resnet18_imagenet_1000_no_top.h5')
-
-
-def sample_batch():
-    img_path = '/Users/clement/mycar4/data/images'
-    img_list = os.listdir(img_path)
-    img_batch = []
-
-    for i in range(0,32):
-        img = cv2.imread(os.path.join(img_path,img_list[i]))
-        img = img/255.0
-        img_batch.append(img)
-
-    batch = np.array(img_batch)
-    return batch 
-
-
 def transfer_resnet18(input_shape):
-    resnet18 = ResNet18(include_top=False,input_shape=input_shape,backend=backend,layers=layers,models=models,utils=utils)
+    resnet18_backbone = ResNet18(include_top=False,input_shape=input_shape,backend=backend,layers=layers,models=models,utils=utils)
     resnet18_preprocess = tf.keras.applications.resnet.preprocess_input
 
     inputs = tf.keras.Input(shape=input_shape)
     x = resnet18_preprocess(inputs)
-    x = resnet18(inputs,training=False)
+    x = resnet18_backbone(inputs,training=False)
     x = tf.keras.layers.GlobalAveragePooling2D()(x)
-    outputs = tf.keras.layers.Dense(10,activation='softmax')(x)
+    outputs = x
     transfered_model = tf.keras.Model(inputs,outputs)
     transfered_model.summary()
     return transfered_model
@@ -335,3 +329,9 @@ history = my_resnet18_100.fit(data_train_ds_100,
                           validation_data = data_validation_ds_100,
                           epochs=2
                         )
+
+
+input_shape = (32,32,3)
+my_resnet18 = ResNet18(include_top=True,weights=None,classes=20,input_shape=input_shape,backend=backend,layers=layers,models=models,utils=utils)
+my_resnet18 = compile(my_resnet18)
+my_resnet18.summary()
