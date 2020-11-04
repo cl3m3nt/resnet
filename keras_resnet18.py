@@ -10,7 +10,8 @@ import os
 import tensorflow.keras.datasets as datasets
 import tensorflow_datasets as tfds
 
-
+WEIGHTS_PATH = 'https://raw.githubusercontent.com/cl3m3nt/resnet/master/resnet18_cifar100_top.h5'
+WEIGHTS_PATH_NO_TOP = 'https://raw.githubusercontent.com/cl3m3nt/resnet/master/resnet18_cifar100_no_top.h5'
 
 def identity_block(input_tensor, kernel_size, filters, stage, block):
     filters1, filters2 = filters
@@ -82,11 +83,6 @@ layers = tf.keras.layers
 models = tf.keras.models
 utils = tf.keras.utils
 
-
-WEIGHTS_PATH = ('https://github.com/cl3m3nt/resnet/blob/master/resnet18_cifar100_coarse.h5')
-WEIGHTS_PATH_NO_TOP = ('https://github.com/cl3m3nt/resnet/blob/master/resnet18_cifar100_coarse_no_top.h5')
-
-
 # ResnNet18
 def ResNet18(include_top=True,
              weights='cifar100_coarse',
@@ -106,7 +102,7 @@ def ResNet18(include_top=True,
                          '(pre-training on cifar100 coarse (super) classes), '
                          'or the path to the weights file to be loaded.')
 
-    if weights == 'cifar100_coarse' and include_top and classes != 1000:
+    if weights == 'cifar100_coarse' and include_top and classes != 20:
         raise ValueError('If using `weights` as `"cifar100_coarse"` with `include_top`'
                          ' as true, `classes` should be 20')
 
@@ -179,29 +175,22 @@ def ResNet18(include_top=True,
     model = Model(inputs, x, name='resnet18')
 
     # Load weights.
-    '''
     if weights == 'cifar100_coarse':
         if include_top:
             weights_path = keras_utils.get_file(
-                'resnet18_cifar100_coarse.h5',
+                'resnet18_cifar100_top.h5',
                 WEIGHTS_PATH,
                 cache_subdir='models',
-                md5_hash='a3326853d92e0bc803f4403849040583')
+                md5_hash='e0798dd90ac7e0498cbdea853bd3ed7f')
         else:
             weights_path = keras_utils.get_file(
-                'resnet18_cifar100_coarse_no_top.h5',
+                'resnet18_cifar100_no_top.h5',
                 WEIGHTS_PATH_NO_TOP,
                 cache_subdir='models',
-                md5_hash='a3326853d92e0bc803f4403849040583')
+                md5_hash='bfeace78cec55f2b0401c1f41c81e1dd')
         model.load_weights(weights_path)
-    '''
-    if weights == 'cifar100_coarse':
-        if include_top:
-            weights_path = 'resnet18_cifar100_coarse.h5'
-        else:
-            weights_path = 'resnet18_cifar100_coarse_no_top.h5'
-        model.load_weights(weights_path)
-    
+
+  
     return model
 
 
@@ -220,7 +209,12 @@ def transfer_resnet18(input_shape):
 
 
 def resnet18_n_class(input_shape,n_class):
-    resnet18 = ResNet18(include_top=False,input_shape=input_shape,backend=backend,layers=layers,models=models,utils=utils)
+    # resnet18
+    resnet18 = ResNet18(include_top=False,weights='cifar100_coarse',input_shape=input_shape,backend=backend,layers=layers,models=models,utils=utils)
+    # freezing resnet18 layers
+    for layer in resnet18.layers:
+        layer.trainable=False
+    # preprocess input for resnet
     resnet18_preprocess = tf.keras.applications.resnet.preprocess_input
 
     inputs = tf.keras.Input(shape=input_shape)
@@ -244,94 +238,77 @@ def compile(model):
     )
     return model
 
-# Resnet18 from Pytorch applications
-import torchvision.models as tvmodels
-resnet18tv = tvmodels.resnet18()
-resnet18tv
-
-# Resnet18 from keras local implementation
-my_resnet18 = ResNet18(include_top=False,input_shape=(32,32,3),backend=backend,layers=layers,models=models,utils=utils)
-my_resnet18 = compile(my_resnet18)
-
-# Resnet18_10 from transfer resnet18_n_class
-my_resnet18_10 = resnet18_n_class((32,32,3),10)
-my_resnet18_10 = compile(my_resnet18_10)
-
-# Resnet18_100 from transfer resnet18_n_class
-my_resnet18_100 = resnet18_n_class((32,32,3),100)
-my_resnet18_100 = compile(my_resnet18_100)
-
-# Resnet18_100 from transfer resnet18_n_class
-my_resnet18_100_coarse = resnet18_n_class((32,32,3),20)
-my_resnet18_100_coarse = compile(my_resnet18_100_coarse)
-
-
-# CIFAR10 from tf.keras.datasets
-cifar10 = datasets.cifar10
-(x_train,y_train),(x_test,y_test) = cifar10.load_data()
-x_train = x_train/255.0
-x_test = x_test/255.0
-
-# CIFAR10 from tfds
-cifar10_tfds = tfds.load('cifar10',as_supervised=True)
-data_train = cifar10_tfds['train']
-data_validation = cifar10_tfds['test']
-data_train_ds = data_train.batch(32)
-data_validation_ds = data_validation.batch(32)
-
-# CIFAR100 from tf.keras.datasets
-cifar100 = datasets.cifar100
-(x_train_100,y_train_100),(x_test_100,y_test_100) = cifar100.load_data()
-x_train_100 = x_train_100/255.0
-x_test_100 = x_test_100/255.0
-
+## Get Data: CIFAR100 on 20 x Super Classes = coarse
 # CIFAR100 coarse from tf.keras.datasets 
 cifar100_coarse = datasets.cifar100
 (x_train_100_coarse,y_train_100_coarse),(x_test_100_coarse,y_test_100_coarse) = cifar100_coarse.load_data(label_mode="coarse")
 x_train_100_coarse = x_train_100_coarse/255.0
 x_test_100_coarse = x_test_100_coarse/255.0
 
+## Define Models
+# Resnet18 from keras local implementation
+resnet18 = ResNet18(include_top=True,weights=None,input_shape=(32,32,3),backend=backend,layers=layers,models=models,utils=utils)
+resnet18 = compile(resnet18)
+resnet18.summary()
 
-# CIFAR100 from tfds
-cifar100_tfds = tfds.load('cifar100',as_supervised=True)
-data_train_100 = cifar100_tfds['train']
-data_validation_100 = cifar100_tfds['test']
-data_train_ds_100 = data_train_100.batch(32)
-data_validation_ds_100 = data_validation._100batch(32)
+top_weights = resnet18.weights
+top_weights[0][0][0][0]
+
+# Resnet18 from keras local implementation
+notop_resnet18 = ResNet18(include_top=False,weights=None,input_shape=(32,32,3),backend=backend,layers=layers,models=models,utils=utils)
+notop_resnet18 = compile(notop_resnet18)
+notop_resnet18.summary()
+
+notop_weights = notop_resnet18.weights
+top_weights[0][0][0][0]
 
 
-# Training Local Resnet with CIFAR10 from tf.keras.datasets
-history = my_resnet18_10.fit(x_train,y_train,
-                          validation_data = (x_test,y_test),
-                          epochs=1
-                        )
 
-# Training Local Resnet with CIFAR10 from tfds
-history = my_resnet18_10.fit(data_train_ds,
-                          validation_data = data_validation_ds,
-                          epochs=1
-                        )
+# Resnet18 from keras local implementation
+resnet18 = ResNet18(include_top=True,input_shape=(32,32,3),backend=backend,layers=layers,models=models,utils=utils)
+resnet18 = compile(resnet18)
+resnet18.summary()
+
+top_weights = resnet18.weights
+top_weights[0][0][0][0]
+
+# Resnet18 from keras local implementation
+notop_resnet18 = ResNet18(include_top=False,input_shape=(32,32,3),backend=backend,layers=layers,models=models,utils=utils)
+notop_resnet18 = compile(notop_resnet18)
+notop_resnet18.summary()
+
+notop_weights = notop_resnet18.weights
+top_weights[0][0][0][0]
+
+
+
+
+
+# ResNet18 Transfer to 10 x classes Classifier
+resnet18_10c = resnet18_n_class((32,32,3),10)
+resnet18_10c = compile(resnet18_10c)
+
+notop_weights = resnet18_10c.weights
+top_weights[0][0][0][0]
+
+# ResNet18 Transfer to 20 x classes Classifier
+resnet18_20c = resnet18_n_class((32,32,3),20)
+resnet18_20c = compile(resnet18_20c)
+
+notop_weights = resnet18_20c.weights
+top_weights[0][0][0][0]
+
+# ResNet18 Transfer to 100 x classes Classifier
+resnet18_100c = resnet18_n_class((32,32,3),100)
+resnet18_100c = compile(resnet18_100c)
+
+notop_weights = resnet18_100c.weights
+top_weights[0][0][0][0]
+
+## Training
 
 # Training Local Resnet with CIFAR100 from tf.keras.datasets
-history = my_resnet18_100.fit(x_train_100,y_train_100,
-                          validation_data = (x_test_100,y_test_100),
-                          epochs=2
-                        )
-
-# Training Local Resnet with CIFAR100 from tf.keras.datasets
-history = my_resnet18_100_coarse.fit(x_train_100_coarse,y_train_100_coarse,
+history = resnet18_20c.fit(x_train_100_coarse,y_train_100_coarse,
                           validation_data = (x_test_100_coarse,y_test_100_coarse),
-                          epochs=2
+                          epochs=1
                         )
-
-# Training Local Resnet with CIFAR100 from tfds
-history = my_resnet18_100.fit(data_train_ds_100,
-                          validation_data = data_validation_ds_100,
-                          epochs=2
-                        )
-
-
-input_shape = (32,32,3)
-my_resnet18 = ResNet18(include_top=True,weights=None,classes=20,input_shape=input_shape,backend=backend,layers=layers,models=models,utils=utils)
-my_resnet18 = compile(my_resnet18)
-my_resnet18.summary()
