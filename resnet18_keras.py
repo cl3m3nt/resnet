@@ -7,8 +7,15 @@ from keras_applications.imagenet_utils import _obtain_input_shape, get_submodule
 import os
 import warnings
 
+# Those are mandatory for ResNet function to work   
+backend = tf.compat.v1.keras.backend
+layers = tf.keras.layers
+models = tf.keras.models
+utils = tf.keras.utils
+
 WEIGHTS_PATH = 'https://raw.githubusercontent.com/cl3m3nt/resnet/master/resnet18_cifar100_top.h5'
 WEIGHTS_PATH_NO_TOP = 'https://raw.githubusercontent.com/cl3m3nt/resnet/master/resnet18_cifar100_no_top.h5'
+
 
 def identity_block(input_tensor, kernel_size, filters, stage, block):
     filters1, filters2 = filters
@@ -74,11 +81,6 @@ def conv_block(input_tensor,kernel_size,filters,stage,block,strides=(2,2)):
     x = Activation('relu')(x)
     return x
 
-# Those are mandatory for ResNet function to work   
-backend = tf.compat.v1.keras.backend
-layers = tf.keras.layers
-models = tf.keras.models
-utils = tf.keras.utils
 
 # ResnNet18
 def ResNet18(include_top=True,
@@ -189,48 +191,3 @@ def ResNet18(include_top=True,
 
   
     return model
-
-
-# resnet18_n_class classifier definition
-# This is the base example to create an n-class classifier with ResNet18 Transfer Learning
-def resnet18_n_class(input_shape:tuple,n_class:int)->Model:
-    """resnet18_n_class function build a custom model
-       based on resnet18 transfer learning, adding a Dense 
-       classification layer
-    Args:
-        input_shape (tuple): the shape of the input data
-        n_class (int): the number of class of the classifier
-
-    Returns:
-        Model: the custom model based on resnet18 transfer learning
-        with extra classification layer
-    """
-
-    # Instantiate a ResNet18 model
-    resnet18 = ResNet18(include_top=False,weights='cifar100_coarse',input_shape=input_shape,backend=backend,layers=layers,models=models,utils=utils)
-    for layer in resnet18.layers: 
-        layer.trainable=False     # Freezing resnet18 layers
-    resnet18_preprocess = tf.keras.applications.resnet.preprocess_input
-
-    # Transfer learning
-    inputs = tf.keras.Input(shape=input_shape)
-    x = resnet18_preprocess(inputs)
-    x = resnet18(inputs,training=True)
-    x = GlobalAveragePooling2D()(x) # Flattening
-    x = Dense(128,activation='relu')(x) # Classifier
-    x = Dropout(0.4)(x) # Drop to minimize overfitting
-    x = Dense(128,activation='relu')(x) # Classifier
-    x = Dropout(0.2)(x) # Drop to minimize overfitting
-    outputs = Dense(n_class,activation='softmax')(x)
-
-    model = Model(inputs,outputs)
-    model.summary()
-
-    return model
-
-# Resnet18 20-classes NoTop + Weights
-resnet18_20c = resnet18_n_class((32,32,3),20)
-resnet18_20c = compile(resnet18_20c)
-
-notop_weights = resnet18_20c.weights
-print(notop_weights[0][0][0][0])
